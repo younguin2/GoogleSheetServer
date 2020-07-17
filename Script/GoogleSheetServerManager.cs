@@ -9,11 +9,11 @@ namespace GoogleSheetServer
     {
         public static void InsertData(string sheetName)
         {
-            StaticCoroutine.DoCoroutine(NetRequestCoroutine(sheetName));
+            StaticCoroutine.DoCoroutine(InsertDataCoroutine(sheetName));
         }
 
 
-        static IEnumerator NetRequestCoroutine(string sheetName)
+        static IEnumerator InsertDataCoroutine(string sheetName)
         {
             float startTime = Time.time;
 
@@ -32,6 +32,32 @@ namespace GoogleSheetServer
             else
             {
                 Debug.Log("Form upload complete!" + " : " +(Time.time - startTime));
+            }
+        }
+
+
+
+        public static void GetData(string sheetName)
+        {
+            StaticCoroutine.DoCoroutine(GetDataCoroutine(sheetName));
+        }
+
+
+        static IEnumerator GetDataCoroutine(string sheetName)
+        {
+            float startTime = Time.time;
+
+            UnityWebRequest www = UnityWebRequest.Get(string.Format("{0}?sheet_name={1}", GoogleServerSettings.Instance.url, sheetName));
+
+            yield return www.SendWebRequest();
+
+            if (www.isNetworkError || www.isHttpError)
+            {
+                Debug.Log(www.error);
+            }
+            else
+            {
+                Debug.Log(www.downloadHandler.text);
             }
         }
     }
