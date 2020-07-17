@@ -15,6 +15,8 @@ namespace GoogleSheetServer
 
         static IEnumerator NetRequestCoroutine(string sheetName)
         {
+            float startTime = Time.time;
+
             WWWForm form = new WWWForm();
             form.AddField("device_id", SystemInfo.deviceUniqueIdentifier);
             form.AddField("name", "Guest");
@@ -29,7 +31,7 @@ namespace GoogleSheetServer
             }
             else
             {
-                Debug.Log("Form upload complete!");
+                Debug.Log("Form upload complete!" + " : " +(Time.time - startTime));
             }
         }
     }
