@@ -2,25 +2,32 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
+using System.Linq;
 
 namespace GoogleSheetServer
 {
     public static class GoogleSheetServerManager
     {
-        public static void InsertData(string sheetName)
+        private static Dictionary<string, string> ConvertClassToDictionary(System.Object obj)
         {
-            StaticCoroutine.DoCoroutine(InsertDataCoroutine(sheetName));
+            return obj.GetType().GetFields().ToDictionary(x => x.Name, x => x.GetValue(obj)?.ToString() ?? "");
         }
 
-
-        static IEnumerator InsertDataCoroutine(string sheetName)
+        public static void InsertData<T>(string sheetName, T insertData, System.Action<ResPacket<T>> callback = null)
         {
-            float startTime = Time.time;
+            StaticCoroutine.DoCoroutine(InsertDataCoroutine(sheetName, insertData, callback));
+        }
 
+        static IEnumerator InsertDataCoroutine<T>(string sheetName, T insertData, System.Action<ResPacket<T>> callback)
+        {
+            //보내는 데이터 만들기
             WWWForm form = new WWWForm();
-            form.AddField("device_id", SystemInfo.deviceUniqueIdentifier);
-            form.AddField("name", "Guest");
+            Dictionary<string, string> dataDic = ConvertClassToDictionary(insertData);
 
+            foreach (string key in dataDic.Keys)
+                form.AddField(key, dataDic[key]);
+
+            //통신 시작
             UnityWebRequest www = UnityWebRequest.Post(string.Format("{0}?sheet_name={1}", GoogleServerSettings.Instance.url,sheetName) , form);
 
             yield return www.SendWebRequest();
@@ -31,22 +38,21 @@ namespace GoogleSheetServer
             }
             else
             {
-                Debug.Log("Form upload complete!" + " : " +(Time.time - startTime));
+                Debug.Log(string.Format("Packet Received : {0}", www.downloadHandler.text));
+                callback?.Invoke(JsonUtility.FromJson<ResPacket<T>>(www.downloadHandler.text));
             }
         }
 
 
 
-        public static void GetData(string sheetName)
+        public static void GetData<T>(string sheetName, System.Action<ResPacket<T>> callback = null)
         {
-            StaticCoroutine.DoCoroutine(GetDataCoroutine(sheetName));
+            StaticCoroutine.DoCoroutine(GetDataCoroutine(sheetName, callback));
         }
 
 
-        static IEnumerator GetDataCoroutine(string sheetName)
+        private static IEnumerator GetDataCoroutine<T>(string sheetName, System.Action<ResPacket<T>> callback)
         {
-            float startTime = Time.time;
-
             UnityWebRequest www = UnityWebRequest.Get(string.Format("{0}?sheet_name={1}", GoogleServerSettings.Instance.url, sheetName));
 
             yield return www.SendWebRequest();
@@ -57,7 +63,8 @@ namespace GoogleSheetServer
             }
             else
             {
-                Debug.Log(www.downloadHandler.text);
+                Debug.Log(string.Format("Packet Received : {0}", www.downloadHandler.text));
+                callback?.Invoke(JsonUtility.FromJson<ResPacket<T>>(www.downloadHandler.text));
             }
         }
     }
