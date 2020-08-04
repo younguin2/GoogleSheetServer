@@ -20,7 +20,7 @@ namespace GoogleSheetServer
                     if (mInstance == null)
                     {
                         mInstance = new GameObject("StaticCoroutine").AddComponent<StaticCoroutine>();
-                        mInstance.hideFlags = HideFlags.HideAndDontSave;
+                        mInstance.gameObject.hideFlags = HideFlags.HideAndDontSave;
                     }
                 }
                 return mInstance;
