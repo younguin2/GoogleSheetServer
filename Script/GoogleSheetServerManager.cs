@@ -10,22 +10,55 @@ namespace GoogleSheetServer
     {
         private static Dictionary<string, string> ConvertClassToDictionary(System.Object obj)
         {
-            return obj.GetType().GetFields().ToDictionary(x => x.Name, x => x.GetValue(obj)?.ToString() ?? "");
+            Dictionary<string, string> fieldInfo = new Dictionary<string, string>();
+            AddClassField(fieldInfo, obj);
+            return fieldInfo;
         }
 
-        public static void InsertData<T>(string sheetName, T insertData, System.Action<ResPacket<T>> callback = null)
+        private static void AddClassField(Dictionary<string, string> fieldInfo, System.Object obj)
         {
-            StaticCoroutine.DoCoroutine(InsertDataCoroutine(sheetName, insertData, callback));
+            System.Reflection.FieldInfo[] informations = obj.GetType().GetFields();
+
+            for(int i = 0; i < informations.Length; i++)
+            {
+
+                if (IsComplex(informations[i].GetValue(obj).GetType()))
+                {
+                    AddClassField(fieldInfo, informations[i].GetValue(obj));
+                }
+                else
+                {
+                    fieldInfo.Add(informations[i].Name, informations[i].GetValue(obj).ToString() ?? "");
+                }
+            }
         }
 
-        static IEnumerator InsertDataCoroutine<T>(string sheetName, T insertData, System.Action<ResPacket<T>> callback)
+        public static bool IsComplex(System.Type typeIn)
+        {
+            if (typeIn.IsSubclassOf(typeof(System.ValueType)) || typeIn.Equals(typeof(string))) //|| typeIn.IsPrimitive
+                return false;
+            else
+                return true;
+
+        }
+
+        public static void Post<T>(string sheetName, string mathod, GoogleSheetReqPacket insertData, System.Action<T> callback = null) where T : GoogleSheetResPacket
+        {
+            StaticCoroutine.DoCoroutine(PostCoroutine(sheetName, mathod, insertData, callback));
+        }
+
+        static IEnumerator PostCoroutine<T>(string sheetName, string mathod, GoogleSheetReqPacket insertData, System.Action<T> callback) where T : GoogleSheetResPacket
         {
             //보내는 데이터 만들기
             WWWForm form = new WWWForm();
+            form.AddField("mathod", mathod);
+
+            //클래스 데이터로 인풋
             Dictionary<string, string> dataDic = ConvertClassToDictionary(insertData);
 
             foreach (string key in dataDic.Keys)
                 form.AddField(key, dataDic[key]);
+
 
             //통신 시작
             UnityWebRequest www = UnityWebRequest.Post(string.Format("{0}?sheet_name={1}", GoogleServerSettings.Instance.url,sheetName) , form);
@@ -39,19 +72,19 @@ namespace GoogleSheetServer
             else
             {
                 Debug.Log(string.Format("Packet Received : {0}", www.downloadHandler.text));
-                callback?.Invoke(JsonUtility.FromJson<ResPacket<T>>(www.downloadHandler.text));
+                callback?.Invoke(JsonUtility.FromJson<T>(www.downloadHandler.text));
             }
         }
 
 
 
-        public static void GetData<T>(string sheetName, System.Action<ResPacket<T>> callback = null)
+        public static void GetData<T>(string sheetName, System.Action<T> callback = null) where T : GoogleSheetResPacket
         {
             StaticCoroutine.DoCoroutine(GetDataCoroutine(sheetName, callback));
         }
 
 
-        private static IEnumerator GetDataCoroutine<T>(string sheetName, System.Action<ResPacket<T>> callback)
+        private static IEnumerator GetDataCoroutine<T>(string sheetName, System.Action<T> callback) where T : GoogleSheetResPacket
         {
             UnityWebRequest www = UnityWebRequest.Get(string.Format("{0}?sheet_name={1}", GoogleServerSettings.Instance.url, sheetName));
 
@@ -64,7 +97,7 @@ namespace GoogleSheetServer
             else
             {
                 Debug.Log(string.Format("Packet Received : {0}", www.downloadHandler.text));
-                callback?.Invoke(JsonUtility.FromJson<ResPacket<T>>(www.downloadHandler.text));
+                callback?.Invoke(JsonUtility.FromJson<T>(www.downloadHandler.text));
             }
         }
     }

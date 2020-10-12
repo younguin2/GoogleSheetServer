@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 075bd42e2bae7a240bf6a0e46eb162ef, type: 3}
   m_Name: GoogleServerSettings
   m_EditorClassIdentifier: 
-  url: https://script.google.com/macros/s/AKfycbzs4NFJYl7CuRw8Y3POk-GRDQnqeHTXNHkWarvZPacJBxqXkjLG/exec
+  url: https://script.google.com/macros/s/AKfycbwA6Vj1t9J83qLi0NQg8QJGeHwgWhPuf6A4AGdaVLrRNfzqVF0v/exec
