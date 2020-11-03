@@ -28,6 +28,9 @@ namespace GoogleSheetServer
                 }
                 else
                 {
+                    if (fieldInfo.ContainsKey(informations[i].Name))
+                        continue;
+
                     fieldInfo.Add(informations[i].Name, informations[i].GetValue(obj).ToString() ?? "");
                 }
             }
@@ -42,12 +45,12 @@ namespace GoogleSheetServer
 
         }
 
-        public static void Post<T>(string sheetName, string mathod, GoogleSheetReqPacket insertData, System.Action<T> callback = null) where T : GoogleSheetResPacket
+        public static void Post<T>(string mathod, GoogleSheetReqPacket insertData, System.Action<T> callback = null) where T : GoogleSheetResPacket
         {
-            StaticCoroutine.DoCoroutine(PostCoroutine(sheetName, mathod, insertData, callback));
+            StaticCoroutine.DoCoroutine(PostCoroutine(mathod, insertData, callback));
         }
 
-        static IEnumerator PostCoroutine<T>(string sheetName, string mathod, GoogleSheetReqPacket insertData, System.Action<T> callback) where T : GoogleSheetResPacket
+        static IEnumerator PostCoroutine<T>(string mathod, GoogleSheetReqPacket insertData, System.Action<T> callback) where T : GoogleSheetResPacket
         {
             //보내는 데이터 만들기
             WWWForm form = new WWWForm();
@@ -61,7 +64,7 @@ namespace GoogleSheetServer
 
 
             //통신 시작
-            UnityWebRequest www = UnityWebRequest.Post(string.Format("{0}?sheet_name={1}", GoogleServerSettings.Instance.url,sheetName) , form);
+            UnityWebRequest www = UnityWebRequest.Post(string.Format("{0}", GoogleServerSettings.Instance.url) , form);
 
             yield return www.SendWebRequest();
 
